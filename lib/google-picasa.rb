@@ -45,7 +45,7 @@ module Google
 	      self.picasa_session.auth_key = auth_key
 	      self.picasa_session.user_id = user_id
 
-	      return authorizationKey
+	      return self.picasa_session
 	    end
 	    
 	    def album(options = {})
