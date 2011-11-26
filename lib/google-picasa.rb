@@ -3,7 +3,7 @@ require 'cgi'
 require 'net/https'
 require 'net/http'
 require 'xmlsimple'
-require 'multipartpost'
+require 'google-picasa/multipartpost'
 require 'google-picasa/version'
 
 module Google
