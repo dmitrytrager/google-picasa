@@ -12,6 +12,7 @@ Gem::Specification.new do |s|
   s.description = %q{Access Picasa Web Album using pure Ruby code.}
 
   s.rubyforge_project = "google-picasa"
+  s.add_runtime_dependency "xml-simple"
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
