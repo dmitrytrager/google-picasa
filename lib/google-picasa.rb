@@ -26,9 +26,11 @@ module Google
         request = Net::HTTP.new(uri.host, uri.port)
         request.use_ssl = true
         request.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        response, data = request.post(uri.path, "accountType=HOSTED_OR_GOOGLE&Email=#{email}&Passwd=#{password}&service=lh2&source=#{source}")
+        response = request.post(uri.path, "accountType=HOSTED_OR_GOOGLE&Email=#{email}&Passwd=#{password}&service=lh2&source=#{source}")
+        data = response.body
 
         authMatch = Regexp.compile("(Auth=)([A-Za-z0-9_\-]+)\n").match(data.to_s)
+
         if authMatch
           authorizationKey = authMatch[2].to_s # substring that matched the pattern ([A-Za-z0-9_\-]+)
         end
@@ -41,7 +43,6 @@ module Google
       end
 
       def album(options = {})
-
         if(options[:name] == nil)
           return nil
         end
@@ -57,7 +58,6 @@ module Google
       end
 
       def albums(options = {})
-
         userId = options[:user_id] == nil ? self.picasa_session.user_id : options[:user_id]
         access = options[:access] == nil ? "public" : options[:access]
         url = "http://picasaweb.google.com/data/feed/api/user/#{userId}?kind=album&access=#{access}"
@@ -67,16 +67,15 @@ module Google
 
         headers = {"Authorization" => "GoogleLogin auth=#{self.picasa_session.auth_key}"}
 
-        response, xml_response = http.get(uri.path, headers)
+        response = http.get(uri.path, headers)
+        xml_response = response.body
 
-        #xml_response = Net::HTTP.get_response(URI.parse(url)).body.to_s
         albums = create_albums_from_xml(xml_response)
 
         return albums
       end
 
       def photos(options = {})
-
         options[:user_id] = options[:user_id].nil? ? self.picasa_session.user_id : options[:user_id]
         options[:album] = options[:album].nil? ? "" : options[:album]
 
@@ -88,7 +87,6 @@ module Google
       end
 
       def create_album(options = {})
-
         title = options[:title].nil? ? "" : options[:title]
         summary = options[:summary].nil? ? "" : options[:summary]
         location = options[:location].nil? ? "" : options[:location]
@@ -120,7 +118,8 @@ module Google
 
         headers = {"Content-Type" => "application/atom+xml", "Authorization" => "GoogleLogin auth=#{self.picasa_session.auth_key}"}
 
-        response, data = http.post(uri.path, createAlbumRequestXml, headers)
+        response = http.post(uri.path, createAlbumRequestXml,headers)
+        data = response.body
 
         album = create_album_from_xml(data)
         return album
@@ -132,10 +131,11 @@ module Google
 
         headers = {"Authorization" => "GoogleLogin auth=#{self.picasa_session.auth_key}"}
 
-        response, album_entry_xml_response = http.get(uri.path, headers)
+        response = http.get(uri.path, headers)
+        album_entry_xml_response = response.body
 
         if(response.code == "200")
-          #parse the entry xml element and get the photo object
+          # parse the entry xml element and get the photo object
           album = self.create_album_from_xml(album_entry_xml_response)
           return album
         else
@@ -155,10 +155,11 @@ module Google
 
         headers = {"Authorization" => "GoogleLogin auth=#{self.picasa_session.auth_key}"}
 
-        response, photo_entry_xml_response = http.get(uri.path, headers)
+        response = http.get(uri.path,headers)
+        photo_entry_xml_response = response.body
 
         if(response.code == "200")
-          #parse the entry xml element and get the photo object
+          # parse the entry xml element and get the photo object
           photo = self.create_photo_from_xml(photo_entry_xml_response)
           return photo
         else
@@ -197,7 +198,9 @@ module Google
           "Authorization" => "GoogleLogin auth=#{self.picasa_session.auth_key}",
           "Slug" => title, "Content-Transfer-Encoding" => "binary"}
 
-        response, data = http.post(uri.path, image_data, headers)
+        response = http.post(uri.path, image_data, headers)
+        data = response.body
+
         photo = self.create_photo_from_xml(data)
 
         return photo
@@ -211,7 +214,7 @@ module Google
 
         headers = {"Authorization" => "GoogleLogin auth=#{self.picasa_session.auth_key}"}
 
-        response, data = http.delete(uri.path, headers)
+        response = http.delete(uri.path, headers)
 
         if(response.code == "200")
           return true
@@ -229,7 +232,7 @@ module Google
 
         headers = {"Authorization" => "GoogleLogin auth=#{self.picasa_session.auth_key}"}
 
-        response, data = http.delete(uri.path, headers)
+        response = http.delete(uri.path, headers)
 
         if(response.code == "200")
           return true
@@ -241,14 +244,12 @@ module Google
 
       def create_albums_from_xml(xml_response)
         albums = []
-        #response_hash = XmlSimple.xml_in(xml_response, { 'ForceArray' => false })
-        #puts response_hash.inspect
 
         Picasa.entries(xml_response).each do |entry|
-          #parse the entry xml element and get the album object
+          # parse the entry xml element and get the album object
           album = Picasa.parse_album_entry(entry)
 
-          #enter session values in album object
+          # enter session values in album object
           album.picasa_session = PicasaSession.new
           album.picasa_session.auth_key = self.picasa_session.auth_key
           album.picasa_session.user_id = self.picasa_session.user_id
@@ -262,10 +263,10 @@ module Google
       def create_album_from_xml(xml_response)
         album = nil
 
-        #parse the entry xml element and get the album object
+        # parse the entry xml element and get the album object\
         album = Picasa.parse_album_entry(XmlSimple.xml_in(xml_response, { 'ForceArray' => false }))
 
-        #enter session values in album object
+        # enter session values in album object
         album.picasa_session = PicasaSession.new
         album.picasa_session.auth_key = self.picasa_session.auth_key
         album.picasa_session.user_id = self.picasa_session.user_id
@@ -276,10 +277,10 @@ module Google
       def create_photo_from_xml(xml_response)
         photo = nil
 
-        #parse the entry xml element and get the photo object
+        # parse the entry xml element and get the photo object
         photo = Picasa.parse_photo_entry(XmlSimple.xml_in(xml_response, { 'ForceArray' => false }))
 
-        #enter session values in photo object
+        # enter session values in photo object
         photo.picasa_session = PicasaSession.new
         photo.picasa_session.auth_key = self.picasa_session.auth_key
         photo.picasa_session.user_id = self.picasa_session.user_id
@@ -296,7 +297,6 @@ module Google
       end
 
       def self.parse_album_entry(album_entry_xml)
-        #album_hash = XmlSimple.xml_in(album_entry_xml.to_s, { 'ForceArray' => false })
         album_hash = album_entry_xml
 
         album = Album.new
@@ -343,7 +343,6 @@ module Google
       end
 
       def self.parse_photo_entry(photo_entry_xml)
-        #photo_hash = XmlSimple.xml_in(photo_entry_xml.to_s, { 'ForceArray' => false })
         photo_hash = photo_entry_xml
 
         photo = Photo.new
@@ -420,7 +419,6 @@ module Google
       end
 
       def photos(options = {})
-
         userId = options[:user_id].nil? ? self.user : options[:user_id]
         albumName = options[:album].nil? ? self.name : options[:album]
         albumId = options[:album_id].nil? ? self.id : options[:album_id]
@@ -436,7 +434,9 @@ module Google
 
         headers = {"Authorization" => "GoogleLogin auth=#{self.picasa_session.auth_key}"}
 
-        response, xml_response = http.get(uri.path, headers)
+        response = http.get(uri.path, headers)
+        xml_response = response.body
+
         photos = self.create_photos_from_xml(xml_response)
 
         return photos
@@ -444,14 +444,12 @@ module Google
 
       def create_photos_from_xml(xml_response)
         photos = []
-        #response_hash = XmlSimple.xml_in(xml_response, { 'ForceArray' => false })
-        #puts response_hash.inspect
 
         Picasa.entries(xml_response).each do |entry|
-          #parse the entry xml element and get the photo object
+          # parse the entry xml element and get the photo object
           photo = Picasa.parse_photo_entry(entry)
 
-          #enter session values in photo object
+          # enter session values in photo object
           photo.picasa_session = PicasaSession.new
           photo.picasa_session.auth_key = self.picasa_session.auth_key
           photo.picasa_session.user_id = self.picasa_session.user_id
@@ -484,7 +482,6 @@ module Google
       end
 
       def update()
-
         updatePhotoXml = "<entry xmlns='http://www.w3.org/2005/Atom'
                       xmlns:media='http://search.yahoo.com/mrss/'
                       xmlns:gphoto='http://schemas.google.com/photos/2007'>
@@ -506,11 +503,11 @@ module Google
 
         headers = {"Content-Type" => "application/atom+xml", "Authorization" => "GoogleLogin auth=#{self.picasa_session.auth_key}"}
 
-        response, data = http.put(uri.path, updatePhotoXml, headers)
+	      response = http.put(uri.path, updatePhotoXml, headers)
+	      data = response.body
 
         if(response.code == "200")
-          #parse the entry xml element and get the photo object
-          #new_photo = Picasa.parse_photo_entry(data)
+          # parse the entry xml element and get the photo object
           new_photo = Picasa.parse_photo_entry(XmlSimple.xml_in(data.to_s, { 'ForceArray' => false }))
           self.version_number = new_photo.version_number
 
@@ -521,7 +518,6 @@ module Google
       end
 
       def move_to_album(picasa_album_id)
-
         updatePhotoXml = "<entry xmlns='http://www.w3.org/2005/Atom'
                       xmlns:media='http://search.yahoo.com/mrss/'
                       xmlns:gphoto='http://schemas.google.com/photos/2007'>
@@ -544,10 +540,11 @@ module Google
 
         headers = {"Content-Type" => "application/atom+xml", "Authorization" => "GoogleLogin auth=#{self.picasa_session.auth_key}"}
 
-        response, data = http.put(uri.path, updatePhotoXml, headers)
+        response = http.put(uri.path, updatePhotoXml,headers)
+        data = response.body
 
         if(response.code == "200")
-          #parse the entry xml element and get the photo object
+          # parse the entry xml element and get the photo object
           new_photo = Picasa.parse_photo_entry(XmlSimple.xml_in(data.to_s, { 'ForceArray' => false }))
           self.version_number = new_photo.version_number
           self.album_id = new_photo.album_id
@@ -564,7 +561,6 @@ module Google
     class Thumbnail
       attr_accessor :url, :width, :height
     end
-
   end
 end
   
